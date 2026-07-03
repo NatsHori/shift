@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  
+  <base target="_top"> <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Responsive Shift Input Form</title>
+  <style>
+    /* ページの基本設定 */
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Noto Sans CJK JP", "Helvetica Neue", Arial, sans-serif;
+      margin: 0;
+      padding: 15px;
+      background-color: #f4f7f6;
+      color: #333;
+    }
+    
+    * {
+      box-sizing: border-box;
+    }
+
+    /* --- 操作パネルのスタイル --- */
+    .controls {
+      background-color: #fff;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      align-items: flex-end;
+      margin-bottom: 10px;
+    }
+    .control-item {
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1; /* スペースに応じて伸びる */
+    }
+    .controls label {
+      font-size: 0.9em;
+      margin-bottom: 5px;
+    }
+    .controls input, .controls button {
+      padding: 10px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      font-size: 1em;
+    }
+    .controls button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+      flex-grow: 1;
+    }
+    .controls button:hover {
+      background-color: #0056b3;
+    }
+
+    /* --- 生成されるフォームコンテナのスタイル（PC向け）--- */
+    #container {
+      display: grid;
+      gap: 20px;
+      /* PCでは320pxを最小幅として自動でカラム数を調整 */
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    }
+
+    /* カード（1日分）のスタイル */
+    .input-group {
+      background-color: #fff;
+      border: 1px solid #ddd;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .input-group h4 { margin: 0 0 10px 0; font-size: 1.1em; }
+    .input-group label { display: block; margin-top: 10px; font-weight: bold; }
+    .input-group select { width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ccc; font-size: 1em;}
+    .holiday-label { font-weight: normal; display: inline-flex; align-items: center; }
+    option[disabled] { display: none; }
+
+
+    /* --- スマホ/タブレット用のスタイル上書き：超巨大版 --- */
+    @media (max-width: 1200px) {
+      body {
+        padding: 5px; /* 画面端の余白を最小限にして有効面積を増やす */
+      }
+
+      .controls {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 20px;
+      } 
+
+      /* 1. カードの一列表示を維持しつつ、余白を大きく */
+      #container {
+        display: block; 
+        grid-template-columns: unset !important;
+      }
+
+      .input-group, .bikou-container {
+        margin-bottom: 25px; /* カード同士の間隔を広げる */
+        padding: 30px; /* カード内の余白をたっぷり取る */
+        border: 2px solid #ccc; /* 枠線を太くして視認性アップ */
+      }
+
+      /* 2. 日付・ラベルをさらに巨大化 */
+      .input-group h4 {
+        font-size: 2rem; /* 超特大の日付 */
+        color: #007bff;
+        border-bottom: 3px solid #007bff;
+        margin-bottom: 20px;
+      }
+      
+      .input-group label, .bikou-container label {
+        font-size: 1.4rem; /* ラベルも大きく */
+        margin-top: 20px;
+      }
+
+      /* 3. 選択肢（セレクトボックス）と入力欄を巨大化 */
+      .input-group select, .bikou-container input, .controls input, .controls button {
+        padding: 20px; /* 指で確実に押せる高さ */
+        font-size: 1.4rem; /* 選択肢の文字もデカく */
+        height: 70px; /* 高さを固定して押しやすく */
+        -webkit-appearance: none; /* iOS特有のスタイルをリセット（押しやすくするため） */
+        appearance: none;
+        background-color: #fff;
+      }
+
+      /* 4. 休みチェックボックスを「ボタン並み」のサイズに */
+      .holiday-label {
+        font-size: 1.8rem !important; /* 「休み」の文字サイズ */
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+        width: 100%; /* 横いっぱいに広げて押しやすく */
+        display: flex;
+        align-items: center;
+      }
+
+      .holiday-label input[type="checkbox"] {
+        width: 2.5rem; 
+        height: 2.5rem;
+        margin-right: 15px;
+      }
+
+      /* 送信ボタンは画面の主役級にデカく */
+      .controls button {
+        height: 80px;
+        font-size: 1.8rem;
+        font-weight: bold;
+        background-color: #28a745; /* 送信は緑色にしても分かりやすい */
+      }
+      
+      /* 社員番号の入力ボックス自体を巨大化 */
+      #staff_id {
+        height: 100px !important;    /* 高さを出してタップしやすく */
+        font-size: 3rem !important;  /* 入力する数字を特大に */
+        text-align: center;         /* 数字を中央に */
+        font-weight: bold;
+        border: 4px solid #007bff;  /* 枠を太くして目立たせる */
+      }
+
+      /* 「社員番号」のラベル文字 */
+      label[for="staff_id"] {
+        font-size: 2rem !important;
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      /* 日数表示の行全体 */
+      p:has(#day-diff-result) {
+        font-size: 2rem;            /* 「日数：」の文字サイズ */
+        background-color: #333;     /* 黒背景に */
+        color: #fff;               /* 白文字 */
+        padding: 15px;
+        border-radius: 8px;
+        text-align: center;
+        margin-top: 20px;
+      }
+
+      /* 日数の数字部分 */
+      #day-diff-result {
+        font-size: 3.5rem !important; /* 数字だけさらに巨大化 */
+        color: #ffeb3b;              /* 数字を黄色にして強調 */
+        font-weight: bold;
+        margin: 0 10px;
+      }
+    }
+
+    /* 備考欄をカードと同じスタイルにする */
+    .bikou-container {
+      background-color: #fff;
+      border: 1px solid #ddd;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      margin-top: 20px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .bikou-container label {
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .bikou-container input {
+      width: 100%;
+      padding: 15px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 1.1em;
+    }
+  </style>
+</head>
+<body onload="generateForms()">
+  
+  <template id="form-template">
+    <div class="input-group">
+      <h4></h4>
+      <label class="holiday-label">
+        <input type="checkbox" onchange="toggleHoliday(this)">休み 
+      </label>
+      <hr style="width:100%; border:0; border-top:1px solid #eee; margin: 15px 0;">
+      <label>出勤可能時刻</label>
+      <select class="time-select starttime-select" name="input_starttime[]">
+        <option value="-1" disabled>休み</option>
+        <option value="4">4:00</option><option value="4.5">4:30</option><option value="5">5:00</option><option value="5.5">5:30</option><option value="6">6:00</option><option value="6.5">6:30</option><option value="7">7:00</option><option value="7.5">7:30</option><option value="8">8:00</option><option value="8.5">8:30</option><option value="9">9:00</option><option value="9.5">9:30</option><option value="10">10:00</option><option value="10.5">10:30</option><option value="11">11:00</option><option value="11.5">11:30</option><option value="12">12:00</option><option value="12.5">12:30</option><option value="13">13:00</option><option value="13.5">13:30</option><option value="14">14:00</option><option value="14.5">14:30</option><option value="15">15:00</option><option value="15.5">15:30</option><option value="16">16:00</option><option value="16.5">16:30</option><option value="17">17:00</option><option value="17.5">17:30</option><option value="18">18:00</option><option value="18.5">18:30</option><option value="19">19:00</option><option value="19.5">19:30</option><option value="20">20:00</option><option value="20.5">20:30</option><option value="21">21:00</option><option value="21.5">21:30</option><option value="22">22:00</option><option value="22.5">22:30</option><option value="23">23:00</option><option value="23.5">23:30</option><option value="24">24:00</option><option value="25">25:00</option><option value="26">26:00</option>
+      </select>
+      <label>退勤希望時刻</label>
+      <select class="time-select endtime-select" name="input_endtime[]">
+        <option value="-1" disabled>休み</option>
+        <option value="4">4:00</option><option value="4.5">4:30</option><option value="5">5:00</option><option value="5.5">5:30</option><option value="6">6:00</option><option value="6.5">6:30</option><option value="7">7:00</option><option value="7.5">7:30</option><option value="8">8:00</option><option value="8.5">8:30</option><option value="9">9:00</option><option value="9.5">9:30</option><option value="10">10:00</option><option value="10.5">10:30</option><option value="11">11:00</option><option value="11.5">11:30</option><option value="12">12:00</option><option value="12.5">12:30</option><option value="13">13:00</option><option value="13.5">13:30</option><option value="14">14:00</option><option value="14.5">14:30</option><option value="15">15:00</option><option value="15.5">15:30</option><option value="16">16:00</option><option value="16.5">16:30</option><option value="17">17:00</option><option value="17.5">17:30</option><option value="18">18:00</option><option value="18.5">18:30</option><option value="19">19:00</option><option value="19.5">19:30</option><option value="20">20:00</option><option value="20.5">20:30</option><option value="21">21:00</option><option value="21.5">21:30</option><option value="22">22:00</option><option value="22.5">22:30</option><option value="23">23:00</option><option value="23.5">23:30</option><option value="24">24:00</option><option value="25">25:00</option><option value="26">26:00</option>
+      </select>
+    </div>
+  </template>
+
+  <div class="controls">
+    <div class="control-item">
+      <label for="staff_id">社員番号</label>
+      <input type="number" id="staff_id">
+    </div>
+    <button onclick="SendDataToSS()">送信</button>
+  </div>
+  
+  <p>日数: <span id="day-diff-result">-</span> 日間</p>
+  <p id="feedback" style="font-weight: bold;"></p>
+  <div id="container"></div>
+
+  <div class="bikou-container">
+    <label for="bikou">備考</label>
+    <input id="bikou" type="text" placeholder="特記事項があれば入力してください">
+  </div>
+
+  <script>
+    function toggleHoliday(checkbox) {
+      const parentGroup = checkbox.closest('.input-group');
+      const startTimeSelect = parentGroup.querySelector('.starttime-select');
+      const endTimeSelect = parentGroup.querySelector('.endtime-select');
+      const startHolidayOption = startTimeSelect.querySelector('option[value="-1"]');
+      const endHolidayOption = endTimeSelect.querySelector('option[value="-1"]');
+
+      if (checkbox.checked) {
+        startTimeSelect.dataset.previousValue = startTimeSelect.value;
+        endTimeSelect.dataset.previousValue = endTimeSelect.value;
+        startHolidayOption.disabled = false;
+        endHolidayOption.disabled = false;
+        startTimeSelect.value = "-1";
+        startTimeSelect.disabled = true;
+        endTimeSelect.value = "-1";
+        endTimeSelect.disabled = true;
+      } else {
+        startTimeSelect.disabled = false;
+        endTimeSelect.disabled = false;
+        startTimeSelect.value = startTimeSelect.dataset.previousValue || "4";
+        endTimeSelect.value = endTimeSelect.dataset.previousValue || "4";
+        startHolidayOption.disabled = true;
+        endHolidayOption.disabled = true;
+      }
+    }
+
+    function generateForms() {
+      // GASから値を受け取る。空の場合は空文字を入れる
+      const startDateStr = "<?= startDate || '' ?>";
+      const endDateStr = "<?= endDate || '' ?>";
+      
+      if (!startDateStr || !endDateStr) {
+        document.getElementById('feedback').textContent = '❌ 操作シートの日付が読み込めませんでした。';
+        return;
+      }
+
+      // スラッシュ区切りをハイフン区切りに変換（iPhone/Safari対策）
+      const startDate = new Date(startDateStr.replace(/\//g, '-'));
+      const endDate = new Date(endDateStr.replace(/\//g, '-'));
+      
+      const diffTime = endDate.getTime() - startDate.getTime();
+      const oneDay = 1000 * 60 * 60 * 24;
+      const diffDays = Math.round(diffTime / oneDay) + 1;
+      
+      if (diffDays <= 0) {
+        document.getElementById('day-diff-result').textContent = "範囲エラー";
+        return;
+      }
+
+      document.getElementById('day-diff-result').textContent = diffDays;
+      const template = document.getElementById('form-template');
+      const container = document.getElementById('container');
+      container.innerHTML = '';
+      let currentDate = new Date(startDate.getTime());
+      
+      // --- 曜日の定義 ---
+      const dayLabels = ["日", "月", "火", "水", "木", "金", "土"];
+      
+      while (currentDate <= endDate) {
+        const clone = template.content.cloneNode(true);
+        const month = currentDate.getMonth() + 1;
+        const day = currentDate.getDate();
+        
+        // --- 曜日を取得 ---
+        const dayOfWeek = dayLabels[currentDate.getDay()]; 
+        
+        // --- 表示用テキスト作成 (例: 12月29日(月)) ---
+        const formattedDate = `${month}月${day}日(${dayOfWeek})`;
+        
+        // カードのタイトルにセット
+        const h4 = clone.querySelector('h4');
+        h4.textContent = formattedDate;
+
+        // 土日の場合に色をつける（任意：CSSのクラスを追加）
+        if (dayOfWeek === "土") h4.style.color = "#007bff"; // 青
+        if (dayOfWeek === "日") h4.style.color = "#dc3545"; // 赤
+
+        container.appendChild(clone);
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+    }
+
+    // 1段階目：名前を確認する
+    function SendDataToSS() {
+      const staffId = document.getElementById('staff_id').value;
+      
+      if (!staffId) {
+        alert("社員番号を入力してください");
+        return;
+      }
+
+      document.getElementById('feedback').textContent = '社員情報を照合中...';
+
+      // GASのgetStaffNameを呼び出す
+      google.script.run
+        .withSuccessHandler(function(staffName) {
+          const confirmMsg = `氏名：${staffName}\n送信しますか？`;
+          if (confirm(confirmMsg)) {
+            executeSubmit(); // 「はい」の場合のみ送信実行
+          } else {
+            document.getElementById('feedback').textContent = '送信をキャンセルしました。';
+          }
+        })
+        .withFailureHandler(showError)
+        .getStaffName(staffId);
+    }
+
+    // 2段階目：実際の送信処理
+    function executeSubmit() {
+      const selectElements = document.querySelectorAll('.time-select');
+      const staffId = document.getElementById('staff_id').value;
+      const bikoudata = document.getElementById('bikou').value;
+      const dataToSend = [];
+
+      for (let i = 0; i < selectElements.length; i++) {
+        dataToSend.push(selectElements[i].value);
+      }
+
+      const l = 32-dataToSend.length;
+      for (i=0;i<l;i++){
+        dataToSend.push("");
+      }
+
+      dataToSend.unshift(staffId);
+      dataToSend.push(bikoudata);
+      google.script.run
+        .withSuccessHandler(showSuccess)
+        .withFailureHandler(showError)
+        .processSelection(dataToSend);
+
+      document.getElementById('feedback').textContent = '送信中...';
+    }
+
+    /**
+    * GAS関数が成功したときのコールバック
+    */
+    function showSuccess(result) {
+      document.getElementById('feedback').textContent = '✅ ' + result;
+    }
+
+    /**
+     * GAS関数が失敗したときのコールバック
+     */
+    function showError(error) {
+      document.getElementById('feedback').textContent = '❌ エラーが発生しました: ' + error.message;
+    }
+
+  </script>
+
+</body>
+</html>
